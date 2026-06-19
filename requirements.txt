@@ -1,0 +1,9 @@
+cdsapi
+psycopg2-binary
+python-dotenv
+tqdm
+netCDF4
+scikit-learn
+rioxarray
+xarray
+pyhdf

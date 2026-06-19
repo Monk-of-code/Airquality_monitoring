@@ -1,0 +1,26 @@
+# Environments and Secrets
+venv/
+.env
+.conda/
+miniconda*/
+anaconda*/
+
+# Images (Project Specific)
+*.png
+
+# Python Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Conda / Anaconda Artifacts
+*.conda
+*.tar.bz2
+conda-meta/
+
+# Windows & WSL2 Interop Artifacts
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*zone.identifier
+.DS_Store
