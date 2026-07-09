@@ -137,21 +137,38 @@ pad_y = (maxy - miny) * 0.015
 # =====================================================================
 # 4. VISUALIZATION 1: MATRIX HEATMAP
 # =====================================================================
+# =====================================================================
+# 4. VISUALIZATION 1: MATRIX HEATMAP
+# =====================================================================
 print("Rendering Matrix Heatmap...")
 heatmap_matrix = df_final.set_index(subcounty_col)[['Annual'] + SEASON_ORDER]
 
-plt.figure(figsize=(14, 10))
-sns.set_theme(style="whitegrid")
-sns.heatmap(heatmap_matrix, annot=True, cmap='YlOrRd', fmt=".2f",
-            vmin=vmin, vmax=vmax, linewidths=0.5,
-            cbar_kws={'label': ' Population-Weighted $PM_{2.5}$ ($\mu g/m^3$)'},
-            annot_kws={'size': 11, 'weight': 'bold'})
-plt.title('Nairobi Subcounties: Population-Weighted $PM_{2.5}$', fontsize=16, fontweight='bold', pad=20)
-plt.ylabel('Subcounty', fontsize=12, fontweight='bold')
-plt.xlabel('Temporal Window', fontsize=12, fontweight='bold')
-plt.xticks(rotation=0, fontsize=11); plt.yticks(rotation=0, fontsize=11)
+# 1. NEW: Clean the y-axis labels by removing the suffix
+heatmap_matrix.index = heatmap_matrix.index.map(
+    lambda x: str(x).upper().replace(" SUB-COUNTY", "").replace(" SUBCOUNTY", "").replace(" SUB COUNTY", "").replace(" SC", "").strip().title()
+)
+
+plt.figure(figsize=(16, 12)) 
+sns.set_theme(style="white") 
+
+ax = sns.heatmap(heatmap_matrix, annot=True, cmap='YlOrRd', fmt=".2f",
+                 vmin=vmin, vmax=vmax, linewidths=0.5,
+                 annot_kws={'size': 13, 'weight': 'bold'}) 
+
+cbar = ax.collections[0].colorbar
+cbar.ax.tick_params(labelsize=13)
+cbar.set_label('Population-Weighted $PM_{2.5}$ ($\mu g/m^3$)', size=14, weight='bold')
+
+plt.title('Nairobi Subcounties: Population-Weighted $PM_{2.5}$', fontsize=20, fontweight='bold', pad=25)
+plt.ylabel('Subcounty', fontsize=15, fontweight='bold', labelpad=10)
+plt.xlabel('Temporal Window', fontsize=15, fontweight='bold', labelpad=10)
+
+# 2. INCREASED: Bumped y-ticks to 14 to fill the newly freed space
+plt.xticks(rotation=0, fontsize=13, fontweight='bold') 
+plt.yticks(rotation=0, fontsize=14, fontweight='bold')
+
 plt.tight_layout()
-plt.savefig(OUTPUT_HEATMAP, dpi=300, bbox_inches='tight')
+plt.savefig(OUTPUT_HEATMAP, dpi=400, bbox_inches='tight') 
 plt.close()
 
 # =====================================================================
@@ -160,7 +177,7 @@ plt.close()
 def plot_annual_map(data, title, filename):
     """Plots the single Annual map with labels, pointer lines, and a stats sidebar using ax.scatter."""
     print(f"Plotting {title}...")
-    fig, ax = plt.subplots(figsize=(14, 10), dpi=300)
+    fig, ax = plt.subplots(figsize=(14, 10), dpi=400)
 
     # 1. Base Map & Scatter
     subcounties.plot(ax=ax, color='#1e1e1e')
@@ -186,13 +203,17 @@ def plot_annual_map(data, title, filename):
                     force_text=(0.5, 0.5), force_points=(0.2, 0.2))
 
     # 4. Generate Sidebar String
-    sidebar_str = "Annual PWE (µg/m³)\n" + "═" * 20 + "\n\n"
+   # 4. Generate Sidebar String
+    sidebar_str = "Annual PWE (µg/m³)\n" + "═" * 25 + "\n"
     for _, row in df_final.iterrows():
-        clean_name = str(row[subcounty_col]).replace(" SC", "").replace(" SUB-COUNTY", "").replace(" SUBCOUNTY", "").title()
+        raw_name = str(row[subcounty_col]).upper()
+        clean_name = raw_name.replace(" SUB-COUNTY", "").replace(" SUBCOUNTY", "").replace(" SUB COUNTY", "").replace(" SC", "").strip().title()
         
         # Get matching initials for the sidebar
         initial = gdf_stats.loc[gdf_stats[subcounty_col] == row[subcounty_col], 'initials'].values[0]
-        sidebar_str += f"{initial} : {clean_name}\n      {row['Annual']:.1f}\n\n"
+        
+        # Use .ljust(15) to keep numbers aligned
+        sidebar_str += f"{initial} : {clean_name.ljust(15)} {row['Annual']:.1f}\n"
 
     # 5. Formatting & Layout
     ax.set_title(title, fontsize=18, weight='bold', pad=15)
@@ -203,19 +224,27 @@ def plot_annual_map(data, title, filename):
     ax.set_ylim(miny - pad_y, maxy + pad_y)
     ax.set_aspect('equal')
 
-    # Shrink plot area to make room for colorbar and sidebar box on the right
-    fig.subplots_adjust(right=0.75)
+    # Push the plot to the left to make room for the wider/taller legend
+    fig.subplots_adjust(right=0.72)
 
     # Colorbar
-    cbar_ax = fig.add_axes([0.77, 0.15, 0.02, 0.7])
+    cbar_ax = fig.add_axes([0.74, 0.15, 0.02, 0.7])
     cbar = fig.colorbar(sc, cax=cbar_ax)
     cbar.set_label('Population-Weighted $PM_{2.5} \, (\mu g/m^3)$', fontsize=14, weight='bold')
     cbar.ax.tick_params(labelsize=11)
 
-    # Add the Sidebar text box
-    fig.text(0.85, 0.5, sidebar_str, fontsize=10, family='monospace', va='center', ha='left',
-             bbox=dict(facecolor='#f8f9fa', edgecolor='gray', boxstyle='round,pad=1'))
-
+    # ---------------------------------------------------------
+    # NEW: Spaced out and padded Sidebar text box
+    # ---------------------------------------------------------
+    fig.text(0.82, 0.5, sidebar_str, 
+             fontsize=12, 
+             family='monospace',
+             weight='semibold',         # <-- Makes text slightly bolder/crisper
+             color='black', 
+             va='center', 
+             ha='left',
+             linespacing=1.8,           # <-- INCREASES VERTICAL SPACE BETWEEN SUCOUNTIES
+             bbox=dict(facecolor='#f8f9fa', edgecolor='gray', boxstyle='round,pad=1.5')) # <-- pad=1.5 MAKES THE BOX BIGGER
     plt.savefig(filename, dpi=300, bbox_inches='tight', facecolor='white')
     plt.close()
 

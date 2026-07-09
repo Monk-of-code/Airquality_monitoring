@@ -129,7 +129,7 @@ def plot_grid_maps(data, title, filename, layout=(1, 1), group_col=None, names=N
         
         if not subset.empty:
             sc = ax.scatter(subset['lon'], subset['lat'], c=subset['final_pm25_physical'],
-                            cmap='magma', vmin=vmin, vmax=vmax, s=85, marker='s', edgecolor='none')
+                            cmap='inferno', vmin=vmin, vmax=vmax, s=85, marker='s', edgecolor='none')
             
         # Draw subcounty boundaries ONLY (no text labels)
         gdf_sub.boundary.plot(ax=ax, color='#888888', linewidth=1.0)
@@ -152,19 +152,17 @@ def plot_grid_maps(data, title, filename, layout=(1, 1), group_col=None, names=N
     fig.supylabel('Latitude', fontsize=14, weight='bold', x=0.08)
     plt.suptitle(title, fontsize=20, weight='bold', y=0.98)
     
-    plt.savefig(filename, dpi=300, bbox_inches='tight', facecolor='white') 
+    plt.savefig(filename, dpi=500, bbox_inches='tight', facecolor='white') 
     plt.close()
-
-
 def plot_annual_map(data, title, filename):
     """Plots the single Annual map with labels, pointer lines, and a stats sidebar."""
     print(f"Plotting {title}...")
-    fig, ax = plt.subplots(figsize=(14, 10), dpi=300)
+    fig, ax = plt.subplots(figsize=(14, 10), dpi=500)
 
     # 1. Base Map & Scatter
     gdf_sub.plot(ax=ax, color='#1e1e1e')
     sc = ax.scatter(data['lon'], data['lat'], c=data['final_pm25_physical'],
-                    cmap='magma', vmin=vmin, vmax=vmax, s=180, marker='s', edgecolor='none')
+                    cmap='inferno', vmin=vmin, vmax=vmax, s=180, marker='s', edgecolor='none')
     gdf_sub.boundary.plot(ax=ax, color='#888888', linewidth=1.2)
 
     # 2. Add Initials
@@ -184,12 +182,14 @@ def plot_annual_map(data, title, filename):
                     expand_points=(1.3, 1.3), expand_text=(1.2, 1.2),
                     force_text=(0.5, 0.5), force_points=(0.2, 0.2))
 
-    # 4. Generate Sidebar String
-    sidebar_str = "Annual PM2.5 (µg/m³)\n" + "═" * 22 + "\n\n"
+    # 4. Generate Sidebar String (Using single \n for clean linespacing tracking)
+    sidebar_str = "Annual PM2.5 (µg/m³)\n" + "═" * 25 + "\n"
     for _, row in sidebar_stats.iterrows():
-        # Clean capitalization for the sidebar display
-        clean_name = str(row[SUBCOUNTY_NAME_COL]).replace(" SC", "").replace(" SUB-COUNTY", "").replace(" SUBCOUNTY", "").title()
-        sidebar_str += f"{row['initials']} : {clean_name}\n      {row['final_pm25_physical']:.1f}\n\n"
+        # Clean the name safely
+        clean_name = str(row[SUBCOUNTY_NAME_COL]).upper().replace(" SUB-COUNTY", "").replace(" SUBCOUNTY", "").replace(" SUB COUNTY", "").replace(" SC", "").strip().title()
+        
+        # Format with .ljust(15) to guarantee the PM2.5 values line up straight
+        sidebar_str += f"{row['initials']} : {clean_name.ljust(15)} {row['final_pm25_physical']:.1f}\n"
 
     # 5. Formatting & Layout
     ax.set_title(title, fontsize=18, weight='bold', pad=15)
@@ -200,22 +200,30 @@ def plot_annual_map(data, title, filename):
     ax.set_ylim(miny - pad_y, maxy + pad_y)
     ax.set_aspect('equal')
 
-    # Shrink plot area to make room for colorbar and sidebar box on the right
-    fig.subplots_adjust(right=0.75)
+    # ADJUSTED: Give more space on the right (0.71) for the expanded legend box
+    fig.subplots_adjust(right=0.71)
 
     # Colorbar
-    cbar_ax = fig.add_axes([0.77, 0.15, 0.02, 0.7])
+    cbar_ax = fig.add_axes([0.73, 0.15, 0.02, 0.7])
     cbar = fig.colorbar(sc, cax=cbar_ax)
     cbar.set_label('$PM_{2.5} \, (\mu g/m^3)$', fontsize=14, weight='bold')
     cbar.ax.tick_params(labelsize=11)
 
-    # Add the Sidebar text box
-    fig.text(0.85, 0.5, sidebar_str, fontsize=10, family='monospace', va='center', ha='left',
-             bbox=dict(facecolor='#f8f9fa', edgecolor='gray', boxstyle='round,pad=1'))
+    # ---------------------------------------------------------
+    # IMPROVED: Perfectly padded and spaced Sidebar text box
+    # ---------------------------------------------------------
+    fig.text(0.81, 0.5, sidebar_str, 
+             fontsize=12, 
+             family='monospace',
+             weight='semibold', 
+             color='black', 
+             va='center', 
+             ha='left',
+             linespacing=1.8, # Adds premium, readable vertical breathing room
+             bbox=dict(facecolor='#f8f9fa', edgecolor='gray', boxstyle='round,pad=1.5'))
 
-    plt.savefig(filename, dpi=300, bbox_inches='tight', facecolor='white')
+    plt.savefig(filename, dpi=500, bbox_inches='tight', facecolor='white')
     plt.close()
-
 
 # =====================================================================
 # 5. ARTIFACT GENERATION
